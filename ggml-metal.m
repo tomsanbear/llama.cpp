@@ -7,6 +7,7 @@
 
 #import <Metal/Metal.h>
 
+
 #undef MIN
 #undef MAX
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -416,7 +417,7 @@ static struct ggml_metal_context * ggml_metal_init(int n_cb) {
     GGML_METAL_LOG_INFO("%s: simdgroup matrix mul. support = %s\n",       __func__, ctx->support_simdgroup_mm ? "true" : "false");
     GGML_METAL_LOG_INFO("%s: hasUnifiedMemory              = %s\n",       __func__, ctx->device.hasUnifiedMemory ? "true" : "false");
 
-    ctx->should_capture_next_compute = false;
+    ctx->should_capture_next_compute = true;
 
 #if TARGET_OS_OSX || (TARGET_OS_IOS && __clang_major__ >= 15)
     if (@available(macOS 10.12, iOS 16.0, *)) {
@@ -801,6 +802,8 @@ static enum ggml_status ggml_metal_graph_compute(
 
         MTLCaptureDescriptor * descriptor = [MTLCaptureDescriptor new];
         descriptor.captureObject = ctx->queue;
+        descriptor.destination = MTLCaptureDestinationGPUTraceDocument;
+        descriptor.outputURL = [NSURL fileURLWithPath:[NSString stringWithFormat:@"/tmp/llamacpp.gputrace"]];
 
         NSError * error = nil;
         if (![[MTLCaptureManager sharedCaptureManager] startCaptureWithDescriptor:descriptor error:&error]) {
